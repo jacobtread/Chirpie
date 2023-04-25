@@ -2,13 +2,17 @@ use std::process::exit;
 
 use chrono::NaiveDateTime;
 use log::error;
-use mongodb::{bson::oid::ObjectId, options::ClientOptions, Client, Database};
+use mongodb::{
+    bson::{doc, oid::ObjectId},
+    options::{ClientOptions, FindOptions},
+    Client, Database,
+};
 use serde::{Deserialize, Serialize};
 
 /// Structure of a user within the app database
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-    /// Unique ID for the user account
+    /// Unique ID for the user
     pub id: ObjectId,
     /// Unique username of the user
     pub username: String,
@@ -16,11 +20,33 @@ pub struct User {
     pub email: String,
 }
 
+type DbResult<T> = mongodb::error::Result<T>;
+
+impl User {
+    const COLLECTION: &str = "users";
+
+    pub async fn get_username(db: &Database, username: &str) -> DbResult<Option<Self>> {
+        let collection = db.collection::<User>(Self::COLLECTION);
+        let filter = doc! { "username": username };
+        let user = collection.find_one(filter, None).await?;
+        Ok(user)
+    }
+
+    /// Finds or creates a user where the email matches the provided
+    /// email address
+    ///
+    /// `email` The email to use
+    pub async fn get_email(db: &Database, email: &str) -> DbResult<Option<Self>> {
+        let collection = db.collection::<User>(Self::COLLECTION);
+        let filter = doc! { "email": email };
+        let user = collection.find_one(filter, None).await?;
+        Ok(user)
+    }
+}
+
 /// Structure of a chirp (Tweet) message
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Chirp {
-    /// Unique ID for the chirp
-    pub id: ObjectId,
     /// ID of the user that made the chirp
     pub owner: ObjectId,
     /// The text of the chirp
