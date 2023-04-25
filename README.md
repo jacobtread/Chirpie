@@ -1,4 +1,8 @@
+<img src="assets/logo.svg" width="100%" height="120px">
+
 # Chirpie
+
+> Random side project
 
 Simple Twitter clone
 
